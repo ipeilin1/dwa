@@ -193,7 +193,7 @@ class Utils {
 		$subject = APP_NAME." ".$subject;
 		
 		# Add Router and execution time
-		$body .= '<h2>Routed Controller/Method:</h2> '.Router::$controller.'/'.Router::$method.'<br/>'.PHP_EOL;
+		$body .= '<h2>Routed Controller/Method:</h2> '.Router::$controller.'/'.Router::$method.'<br/>';
 		
 		# Add cookies
 		$body .= "<h2>Cookies</h2>";

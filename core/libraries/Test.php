@@ -1,6 +1,7 @@
 <?php
+# http://www.simpletest.org/
 
-require_once(CORE.'vendors/simpletest/autorun.php');
+require_once(DOC_ROOT.'/core/vendors/simpletest/autorun.php');
 
 class Test {
 		
@@ -10,7 +11,15 @@ class Test {
 	# How we identify the test files
 	protected static $test_postfix = "_Test.php";
 	
-		
+	
+	/*-------------------------------------------------------------------------------------------------
+	
+	-------------------------------------------------------------------------------------------------*/
+	public function __construct() {	
+	
+	}
+	
+	
 	/*-------------------------------------------------------------------------------------------------
 	
 	-------------------------------------------------------------------------------------------------*/
@@ -18,28 +27,21 @@ class Test {
 	
 		# All the directories we'll look for tests
 		$dirs = array(
-			CORE.'/libraries/',
-			APP_PATH.'/controllers/',
-			APP_PATH.'/libraries/',
+			DOC_ROOT.'core/libraries/',
+			APP_PATH.'controllers/',
+			APP_PATH.'libraries/',
 		);	
 		
 		# Loop through the directories
-		foreach($dirs as $dir) {
-		
-			foreach(glob($dir."*".$test_postfix) as $file) {
-				
+		foreach($dirs as $dir) {	
+					
+			foreach(glob($dir."*".self::$test_postfix) as $file) {
+	
 				# Run the test file
 				require_once($file);
 				
 			}
-			
 		}
-		
-		
-		
 	}
-		
-
-} # end class
-
-?>
+	
+} 

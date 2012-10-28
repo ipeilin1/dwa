@@ -163,7 +163,21 @@ class Log
 
         $this->_severityThreshold = $severity;
         if (!file_exists($logDirectory)) {
-            mkdir($logDirectory, self::$_defaultPermissions, true);
+        
+        	$results = mkdir($logDirectory, self::$_defaultPermissions, true);
+            
+            # Show problem when in development
+	        if(!$results && !IN_PRODUCTION) {
+	        	die("Failed to make a directory for logs; please create a writable directory at: ".LOG_PATH);
+	        }
+	        # Email problem when in production
+	        elseif(!$results && IN_PRODUCTION) {
+	        	# Email app owner
+				$subject = "Log Directory Error:".LOG_PATH;
+				$body    = "Failed to make a directory for logs; please create a writable directory at: ".LOG_PATH;
+				Utils::alert_admin($subject, $body);
+				die();
+	        }
         }
 
         if (file_exists($this->_logFilePath) && !is_writable($this->_logFilePath)) {
@@ -176,6 +190,19 @@ class Log
             $this->_logStatus = self::STATUS_LOG_OPEN;
             $this->_messageQueue[] = $this->_messages['opensuccess'];
         } else {
+        	# Show problem when in development
+	        if(!IN_PRODUCTION) {
+	        	die("Logging failed; please make the following directory writable: ".LOG_PATH);
+	        }
+	        # Email problem when in production
+	        else {
+	        	# Email app owner
+				$subject = "Log Permissions Error:".LOG_PATH;
+				$body    = "Logging failed; please make the following directory writable: ".LOG_PATH;
+				Utils::alert_admin($subject, $body);
+				die();
+	        }
+	        
             $this->_logStatus = self::STATUS_OPEN_FAILED;
             $this->_messageQueue[] = $this->_messages['openfail'];
         }
@@ -341,6 +368,11 @@ class Log
      */
     public function log($line, $severity)
     {
+    
+    	if(is_array($line)) {
+	    	$line = var_export($line, true);
+    	}
+    
         if ($this->_severityThreshold >= $severity) {
             $status = $this->_getTimeLine($severity);
             $this->writeFreeFormLine("$status $line \n");

@@ -34,9 +34,42 @@ class Router {
 
 		} else {
 
-			// requested URI not including APP_NAME or containing directories
-			$uri = $_SERVER['PHP_SELF'];
+			// Get Requested URI not including APP_NAME or containing directories
+			if ( ! empty($_SERVER['PATH_INFO'])) {
+				$uri = $_SERVER['PATH_INFO']; # PATH_INFO does not contain the docroot or index
+			}
+			else {
+				// REQUEST_URI and PHP_SELF include the docroot and index
+				if (isset($_SERVER['REQUEST_URI'])) {
+					/*
+					We use REQUEST_URI as the fallback value. The reason
+					for this is we might have a malformed URL such as:
 					
+					http://localhost/http://example.com/judge.php
+					
+					which parse_url can't handle. So rather than leave empty
+					handed, we'll use this.
+					*/
+					$uri = $_SERVER['REQUEST_URI'];
+	
+					// Valid URL path found, set it.
+					if ($request_uri = parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH)) 
+						$uri = $request_uri;
+	
+					// Decode the request URI
+					$uri = rawurldecode($uri);
+				}
+				elseif (isset($_SERVER['PHP_SELF'])) {
+					$uri = $_SERVER['PHP_SELF'];
+				}
+				elseif (isset($_SERVER['REDIRECT_URL'])) {
+					$uri = $_SERVER['REDIRECT_URL'];
+				}
+				else {
+					die('Error: Unable to detect the URI using PATH_INFO, REQUEST_URI, PHP_SELF or REDIRECT_URL');
+				}
+			}
+		
 		}
 		
 		// remove front router (index.php) if it exists in URI
