@@ -18,69 +18,63 @@ class users_controller extends base_controller {
 	}
 	
 	public function p_signup() {
-	
-		# What data was submitted
-		//print_r($_POST);
-		
-		# Encrypt password
+		# Encrypt the password	
 		$_POST['password'] = sha1(PASSWORD_SALT.$_POST['password']);
-		
-		# Create and encrypt token
-		$_POST['token']    = sha1(TOKEN_SALT.$_POST['email'].Utils::generate_random_string());
-		
-		# Store current timestamp 
-		$_POST['created']  = Time::now(); # This returns the current timestamp
+
+		# More data we want stored with the user	
+		$_POST['created']  = Time::now();
 		$_POST['modified'] = Time::now();
-		
-		# Insert 
-		DB::instance(DB_NAME)->insert('users', $_POST);
-		
-		echo "You're registered! Now go <a href='/users/login'>login</a>";
-	
+		$_POST['token']    = sha1(TOKEN_SALT.$_POST
+		['email'].Utils::generate_random_string());
+			
+		# Insert this user into the database 
+		$user_id = DB::instance(DB_NAME)->insert("users", $_POST);
+			
 	}
 	
 	public function login() {
 
-	# Setup view
-		$this->template->content = View::instance('v_users_login');
-		$this->template->title   = "Login";
+		# Setup view
+			$this->template->content = View::instance('v_users_login');
+			$this->template->title   = "Login";
 
-	# Render template
-		echo $this->template;
+		# Render template
+			echo $this->template;
 	
 	}
 
 	
 	public function p_login() {
 		
-		# Prevent SQL injection attacks
+		# Sanitize the user entered data to prevent any funny-business (re: SQL Injection Attacks)
 		$_POST = DB::instance(DB_NAME)->sanitize($_POST);
 		
-		# Encrypt the password	
+		# Hash submitted password so we can compare it against one in the db
 		$_POST['password'] = sha1(PASSWORD_SALT.$_POST['password']);
 		
-		# Look for a matching email and password in the DB - retrieve token if we find it
-		$q = "SELECT token
-			FROM users
-			WHERE email = '".$_POST['email']."'
-			AND password = '".$_POST['password']."'
-			";
+		# Search the db for this email and password
+		# Retrieve the token if it's available
+		$q = "SELECT token 
+			FROM users 
+			WHERE email = '".$_POST['email']."' 
+			AND password = '".$_POST['password']."'";
 		
-		$token = DB::instance(DB_NAME)->select_field($q);
-		
-		# Login failed
-		
-		if($token == "") {
-			//Router::redirect("/users/login");
-		}
-		
-		# Login passed
-		else {
-			setcookie("token", $token, strtotime('+2 weeks'), '/');
-			Router::redirect("/");
+		$token = DB::instance(DB_NAME)->select_field($q);	
+					
+		# If we didn't get a token back, login failed
+		if(!$token) {
+				
+			# Send them back to the login page
+			Router::redirect("/users/login/");
 			
-		echo "You are Log in!";
-		
+		# But if we did, login succeeded! 
+		} else 	{
+				
+			# Store this token in a cookie
+			setcookie("token", $token, strtotime('+1 year'), '/');
+			
+			# Send them to the main page - or whever you want them to go
+			Router::redirect("/");
 		}
 	}
 	
@@ -104,27 +98,22 @@ class users_controller extends base_controller {
 	
 	}
 
-	public function profile($user_name = NULL) {
-		# Not logged in
+	public function profile() {
+
+		# If user is blank, they're not logged in, show message and don't do anything else
 		if(!$this->user) {
-			echo "Members only. <a href='/users/login/'>Please login.</a>";
-			return;
+			echo "Members only. <a href='/users/login'>Login</a>";
+			
+			# Return will force this method to exit here so the rest of 
+			# the code won't be executed and the profile view won't be displayed.
+			return false;
 		}
 		
-		# Logged in
-		if($user_name == NULL) {
-			echo "You did not specify a user";
-		} else {
-		
-			# Setup the view
-				$this->template->content = View::instance("v_users_profile");
-				$this->template->title   = "Profile for ".$user_name;
-				
-			# Don't need to pass any variables to the view because all we need is $user and that's already set globally 
-	
-			# Render the view
-				echo $this->template;
-		}
+		# Setup view
+		$this->template->content = View::instance('v_users_profile');
+		$this->template->title   = "Profile of".$this->user->first_name;
+			
+		# Render template
+		echo $this->template;
+			}
 	}
-	
-}
